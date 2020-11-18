@@ -1,0 +1,31 @@
+image: java:8-jdk
+
+stages:
+  - build
+  - test
+  - sonarqube
+
+before_script:
+  - set GRADLE_USER_HOME=`pwd`/.gradle
+
+
+build:
+  stage: build
+  script: 
+    - ./gradlew assemble
+  only:
+    - master
+
+test:
+  stage: test
+  script:
+    - ./gradlew check
+
+sonarqube:
+  stage: sonarqube
+  script:
+    - ./gradlew sonarqube
+
+after_script:
+  - echo "END"
+

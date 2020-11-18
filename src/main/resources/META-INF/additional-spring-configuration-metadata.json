@@ -1,0 +1,18 @@
+{
+  "properties": [
+    {
+      "name": "spring.datasource.validationQuery",
+      "type": "java.lang.String",
+      "description": "Description for spring.datasource.validationQuery."
+    },
+    {
+      "name": "writeo.app.jwtSecret",
+      "type": "java.lang.String",
+      "description": "Description for writeo.app.jwtSecret."
+    },
+    {
+      "name": "writeo.app.jwtExpirationMs",
+      "type": "java.lang.String",
+      "description": "Description for writeo.app.jwtExpirationMs."
+    }
+  ] }
