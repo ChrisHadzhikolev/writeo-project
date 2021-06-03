@@ -1,5 +1,5 @@
 import http from "../http-common";
-import authHeader from '../logic/authHeader';
+import authHeader from './authHeader';
 
 
 class BuyerDataService {
@@ -8,23 +8,23 @@ class BuyerDataService {
     }
 
     get(id) {
-        return http.get(`/buyer/${id}`);
+        return http.get(`/buyer/${id}`, {headers: authHeader()});
     }
 
     create(data) {
-        return http.post("/buyer/add", data);
+        return http.post("/buyer/add", data,{headers: authHeader()});
     }
 
     update(id, data) {
-        return http.put(`/buyer/update/${id}`, data);
+        return http.put(`/buyer/update/${id}`, data, {headers: authHeader()});
     }
 
     delete(id) {
-        return http.delete(`/buyer/delete/${id}`);
+        return http.delete(`/buyer/delete/${id}`,  {headers: authHeader()});
     }
 
     deleteAll() {
-        return http.delete(`/buyer/deleteAll`);
+        return http.delete(`/buyer/deleteAll`, {headers: authHeader()});
     }
 
     // findByTitle(title) {

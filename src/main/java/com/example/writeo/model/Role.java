@@ -3,6 +3,7 @@ package com.example.writeo.model;
 import com.example.writeo.enums.UserType;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class Role {
@@ -22,6 +23,11 @@ public class Role {
         this.name = name;
     }
 
+    public Role(int id, UserType roleAuthor) {
+        this.id = id;
+        this.name=roleAuthor;
+    }
+
     public Integer getId() {
         return id;
     }
@@ -36,5 +42,26 @@ public class Role {
 
     public void setName(UserType name) {
         this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "Role{" +
+                "id=" + id +
+                ", name=" + name +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Role)) return false;
+        Role role = (Role) o;
+        return getName() == role.getName();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getName());
     }
 }

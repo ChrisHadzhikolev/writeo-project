@@ -4,6 +4,8 @@ stages:
   - build
   - test
   - sonarqube
+  - deploy
+  - frontend
 
 before_script:
   - set GRADLE_USER_HOME=`pwd`/.gradle
@@ -13,8 +15,6 @@ build:
   stage: build
   script: 
     - ./gradlew assemble
-  only:
-    - master
 
 test:
   stage: test
@@ -26,6 +26,26 @@ sonarqube:
   script:
     - ./gradlew sonarqube
 
+deploy:
+  stage: deploy
+  before_script:
+    - ./gradlew assemble
+  script:
+    - docker build -t writeoapi .
+    - docker run --rm --name writeoAPI-container -dp 8080:8080 writeoapi
+  only:
+    - master
+
+frontend:
+  stage: frontend
+  before_script: 
+    - cd src/main/resources/templates/my-app
+  script: 
+    - docker build -t writeo-react .
+    - docker run --rm --name writeoUI-container -dp 3000:3000 writeo-react
+  only:
+    - master
+
 after_script:
-  - echo "END"
+  - echo "END of CI"
 

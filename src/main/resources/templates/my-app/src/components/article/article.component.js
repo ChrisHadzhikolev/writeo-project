@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import ArticleDataService from "../../services/article.service";
+import {ButtonGroup, ToggleButton} from "react-bootstrap";
 
 export default class Article extends Component {
     constructor(props) {
@@ -16,7 +17,7 @@ export default class Article extends Component {
                 articleTitle: "",
                 articleContent: "",
                 articlePublished: false,
-                // articleStatus: 0,
+                articleStatus: 0,
                 articlePrice: 0,
             },
             message: ""
@@ -33,7 +34,12 @@ export default class Article extends Component {
 
     handleChange = (e) => {
         const val = e.target.value;
-        const tid = e.target.id;
+        let tid;
+        if (e.target.id === "") {
+            tid = "articleStatus";
+        } else {
+            tid = e.target.id;
+        }
         console.log(val + " " + tid)
         this.setState(prevState => ({
             currentArticle: {
@@ -54,17 +60,19 @@ export default class Article extends Component {
                 console.log(response.data);
             })
             .catch(e => {
-                console.log(e);
+                if(e.response.status === 403){
+                    window.location.replace('/forbidden');
+                }
             });
     }
 
     updatePublished(status) {
-        var data = {
+        let data = {
             id : this.state.currentArticle.id,
             articleTitle: this.state.currentArticle.articleTitle,
             articleContent: this.state.currentArticle.articleContent,
             articlePublished: status,
-            // articleStatus: this.state.currentArticle.articleStatus,
+            articleStatus: this.state.currentArticle.articleStatus,
         };
 
 
@@ -132,6 +140,37 @@ export default class Article extends Component {
                                 value={currentArticle.articleTitle}
                                 name="title"/>
                         </div>
+                        <ButtonGroup
+                            toggle
+                            className="mb-2"
+                            id="articleStatus"
+                            onChange={this.handleChange}
+                        >
+                            <ToggleButton
+                                className={"btn btn-primary"}
+                                variant={"secondary"}
+                                type={"radio"}
+                                value={1}
+                            >
+                                Free
+                            </ToggleButton>
+                            <ToggleButton
+                                className={"btn btn-primary"}
+                                variant={"secondary"}
+                                type={"radio"}
+                                value={2}
+                            >
+                                Sale
+                            </ToggleButton>
+                            <ToggleButton
+                                className={"btn btn-primary"}
+                                variant={"secondary"}
+                                type={"radio"}
+                                value={3}
+                            >
+                                Not for Sale
+                            </ToggleButton>
+                        </ButtonGroup>
                         <div className="input-group mb-3">
                             <div className="input-group-prepend">
                                 <span className="input-group-text">€</span>
@@ -179,7 +218,7 @@ export default class Article extends Component {
                             className="badge badge-primary mr-2"
                             onClick={() => this.updatePublished(false)}
                         >
-                            UnPublish
+                            Unpublish
                         </button>
                     ) : (
                         <button

@@ -1,7 +1,7 @@
 package com.example.writeo.enums;
 
 public enum ArticleStatus {
-    Auction,
+    Sold,
     ForSale,
     FreeToUse,
     NotForSale

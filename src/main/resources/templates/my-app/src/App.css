@@ -4,6 +4,10 @@
   margin: 0.5vw;
 }
 
+#title{
+  font-size: xxx-large;
+}
+
 #homeLink{
   text-decoration: none;
   color: #1a1a1a;
@@ -56,17 +60,24 @@ nav{
   padding: 8% 0 0;
   margin: auto;
 }
+
+.profile-page {
+  width: 75vw;
+  padding: 8% 0 0;
+  margin: auto;
+}
+
+
 .form {
   position: relative;
   z-index: 1;
   background: #FFFFFF;
-  max-width: 360px;
   margin: 0 auto 100px;
   padding: 45px;
   text-align: center;
   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
 }
-.form input {
+.form input, textarea {
   font-family: "Roboto", sans-serif;
   outline: 0;
   width: 100%;
@@ -82,6 +93,7 @@ nav{
   box-sizing: border-box;
   font-size: 14px;
 }
+
 .form input:focus{
   border-color: #918EF4;
 }
@@ -111,6 +123,33 @@ nav{
 .form .message a {
   color: #6F9CEB;
   text-decoration: none;
+}
+
+.profile-page input, textarea{
+  width: 80%;
+}
+
+.profile-page select{
+  width: 35%;
+  margin-bottom: 10px;
+  float: left;
+  margin-left: 10%;
+}
+.profile-page button{
+  width: 30%;
+}
+
+#deleteBtn{
+  padding: 0;
+  background-color: red;
+  float: right;
+  height: 5vh;
+  width: 15vw;
+  font-size: 10px;
+}
+
+#deleteBtn:hover{
+  background-color: darkred;
 }
 
 .container {

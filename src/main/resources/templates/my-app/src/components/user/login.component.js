@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 
 import Form from "react-validation/build/form";
 import Input from "react-validation/build/input";
@@ -75,7 +75,10 @@ export default class LoginComponent extends Component {
     }
   }
 
-  render() {
+  contentChecker() {
+    if (AuthService.getCurrentUser() != null) {
+      return <Redirect to={"/forbidden"} />;
+    }
     return (
       <div className="login-page">
         <div className="form">
@@ -105,7 +108,7 @@ export default class LoginComponent extends Component {
               onChange={this.handleChange}
               validations={[required]}
             />
-            <button disabled={this.state.loading}>
+            <button id="loginBtn" disabled={this.state.loading}>
               {this.state.loading && (
                 <span className="spinner-border spinner-border-sm" />
               )}
@@ -135,34 +138,12 @@ export default class LoginComponent extends Component {
       </div>
     );
   }
+
+  render() {
+    return(
+        <>
+          {this.contentChecker()}
+        </>
+    );
+  }
 }
-//<button
-//                     className="btn btn-primary btn-block"
-//                     disabled={this.state.loading}
-//                 >
-//                   {this.state.loading && (
-//                       <span className="spinner-border spinner-border-sm"/>
-//                   )}
-//                   <span>Login</span>
-//                 </button>
-//               </div>
-//
-//               {this.state.message && (
-//                   <div className="form-group">
-//                     <div className="alert alert-danger" role="alert">
-//                       {this.state.message}
-//                     </div>
-//                   </div>
-//               )}
-//               <CheckButton
-//                   style={{ display: "none" }}
-//                   ref={c => {
-//                     this.checkBtn = c;
-//                   }}
-//               />
-//             </Form>
-//           </div>
-//         </div>
-//     );
-//   }
-// }

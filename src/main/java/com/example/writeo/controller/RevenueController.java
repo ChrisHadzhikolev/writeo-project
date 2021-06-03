@@ -1,48 +1,46 @@
 package com.example.writeo.controller;
 
+import com.example.writeo.controllerService.services.RevenueService;
+import com.example.writeo.exception.JPAException;
 import com.example.writeo.model.Revenue;
-import com.example.writeo.repository.RevenueRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-//import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @CrossOrigin
 @RequestMapping("revenue")
-//@PreAuthorize("hasAnyRole('Owner', 'Admin')")
+@PreAuthorize("hasAnyRole('ROLE_OWNER', 'ROLE_ADMIN')")
 public class RevenueController {
     @Autowired
-    private RevenueRepository revenueRepository;
+    private RevenueService revenueService;
 
     @GetMapping("/all")
     public ResponseEntity<List<Revenue>> getAllRevenueRecords() {
-        try {
-            List<Revenue> revenues = new ArrayList<Revenue>(revenueRepository.findAll());
-            if (revenues.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
+        try{
+            List<Revenue> revenues = revenueService.findAll();
+            if(revenues == null) return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             return new ResponseEntity<>(revenues, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (JPAException e) {
+            return new ResponseEntity("500", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Revenue> getRevenueRecordById(@PathVariable("id") long id) {
-        Optional<Revenue> revenueData = revenueRepository.findById(id);
+        Optional<Revenue> revenueData = revenueService.findById(id);
         return revenueData.map(revenue -> new ResponseEntity<>(revenue, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping("/add")
     public ResponseEntity<Revenue> createRevenue(@RequestBody Revenue revenue) {
         try {
-            revenueRepository.save(revenue);
+            revenueService.save(revenue);
             return new ResponseEntity<>(revenue, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -51,23 +49,18 @@ public class RevenueController {
 
     @PutMapping("/update/{id}")
     public ResponseEntity<Revenue> updateRevenue(@PathVariable("id") long id, @RequestBody Revenue revenue) {
-        Optional<Revenue> revenueData = revenueRepository.findById(id);
-
-        if (revenueData.isPresent()) {
-            Revenue _revenue = revenueData.get();
-            _revenue.setMonth_and_year(revenue.getMonth_and_year());
-            _revenue.setRevenue(revenue.getRevenue());
-            revenueRepository.save(_revenue);
-            return new ResponseEntity<>(_revenue, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        try{
+            return new ResponseEntity<>(revenueService.updateRevenue(revenue, id), HttpStatus.OK);
+        }catch (NullPointerException e)
+        {
+            return new ResponseEntity("500", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<HttpStatus> deleteRevenueRecord(@PathVariable("id") long id) {
         try {
-            revenueRepository.deleteById(id);
+            revenueService.deleteById(id);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -77,7 +70,7 @@ public class RevenueController {
     @DeleteMapping("/deleteAll")
     public ResponseEntity<HttpStatus> deleteAllRevenueRecords() {
         try {
-            revenueRepository.deleteAll();
+            revenueService.deleteAll();
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

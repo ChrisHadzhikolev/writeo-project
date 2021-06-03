@@ -1,162 +1,128 @@
 package com.example.writeo.controller;
 
+import com.example.writeo.controllerService.services.UserService;
 import com.example.writeo.enums.Gender;
-import com.example.writeo.enums.UserType;
-import com.example.writeo.model.*;
-import com.example.writeo.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.writeo.exception.JPAException;
+import com.example.writeo.model.User;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.zalando.problem.ProblemModule;
-import org.zalando.problem.violations.ConstraintViolationProblemModule;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import org.springframework.security.test.context.support.WithMockUser;
 
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@WebMvcTest(controllers = UserController.class, properties = {"spring.datasource.url=jdbc:h2:mem:virtual", "spring.datasource.username=sa", "spring.datasource.password=password"})
+@RunWith(SpringRunner.class)
+@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:virtual", "spring.datasource.username=sa", "spring.datasource.password=password"})
 class UserControllerTest {
-
     @Autowired
-    private MockMvc mockMvc;
+    private UserController userController;
 
     @MockBean
-    private UserRepository userRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private UserService userService;
 
     private List<User> userList;
 
     @BeforeEach
     void setup() {
-        this.userList = new ArrayList<>();
-        this.userList.add(new User(0L, "Alisson", "Argent", "aa11", Gender.Female, "iyfug787g8g87fg8gf7g8f7g87gf87g8fg87gf87gr87g", "a.argent@mail.fr", "Huntress..."));
-        this.userList.add(new User(1L, "Scott", "McCall", "true_alpha", Gender.Male, "iyfug7hhkdhficuhiduhiudhiufhifhuff87gr87gjfj", "s.mccal@mail.com", "Alpha..."));
-        this.userList.add(new User(2L, "Lydia", "Martin", "scream77", Gender.Female, "iyfughv7ryhv87hr78hv87reh8v7rhv8hre87vh88hbg", "a.argent@mail.com", "Banshee duh..."));
-
-        objectMapper.registerModule(new ProblemModule());
-        objectMapper.registerModule(new ConstraintViolationProblemModule());
+        userList = Arrays.asList(
+                new User(0L, "Alisson", "Argent", "aa11", Gender.Female, "iyfug787g8g87fg8gf7g8f7g87gf87g8fg87gf87gr87g", "a.argent@mail.fr", "Huntress..."),
+                new User(1L, "Scott", "McCall", "true_alpha", Gender.Male, "iyfug7hhkdhficuhiduhiudhiufhifhuff87gr87gjfj", "s.mccal@mail.com", "Alpha..."),
+                new User(2L, "Lydia", "Martin", "scream77", Gender.Female, "iyfughv7ryhv87hr78hv87reh8v7rhv8hre87vh88hbg", "a.argent@mail.com", "Banshee duh...")
+        );
     }
 
+    @AfterEach
+    void tearDown() {}
 
     @Test
-    void getAllUsers() throws Exception{
-        given(userRepository.findAll()).willReturn(userList);
-        this.mockMvc.perform(get("/user/all"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()", is(userList.size())));
-    }
-
-    @Test
-    void getUserById() throws Exception{
-        final long userId = 0L;
-        final User user = userList.get(0);
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-
-        this.mockMvc.perform(get("/user/{id}", userId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName", is(user.getFirstName())))
-                .andExpect(jsonPath("$.lastName", is(user.getLastName())))
-                .andExpect(jsonPath("$.username", is(user.getUsername())))
-                .andExpect(jsonPath("$.gender", is(user.getGender().toString())))
-                .andExpect(jsonPath("$.encPwd", is(user.getEncPwd())))
-                .andExpect(jsonPath("$.email", is(user.getEmail())))
-                .andExpect(jsonPath("$.bio", is(user.getBio())));
-                //.andExpect(jsonPath("$.userType", is(user.getUserType().toString())));
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void getAllUsers() throws JPAException {
+        Mockito.when(userService.findAll()).thenReturn(userList);
+        List<User> actualUsers = userController.getAllUsers().getBody();
+        assertEquals(userList, actualUsers);
     }
 
     @Test
-    void getUserByIdNotFound() throws Exception{
-        final long userId = 7L;
-        given(userRepository.findById(userId)).willReturn(Optional.empty());
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void getUserById(){
+        final long userId = 1L;
+        Mockito.when(userService.findById(userId)).thenReturn(Optional.ofNullable(userList.get(1)));
+        User actualUser = userController.getUserById(userId).getBody();
+        HttpStatus httpStatus = userController.getUserById(userId).getStatusCode();
+        assertEquals(userList.get(1), actualUser);
+        assertEquals(HttpStatus.OK, httpStatus);
 
-        this.mockMvc.perform(get("/user/{id}", userId))
-                .andExpect(status().isNotFound());
     }
 
     @Test
-    void createUser() throws Exception{
-        given(userRepository.save(any(User.class))).willAnswer((invocation) -> invocation.getArgument(0));
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void getUserByIdNotFound(){
+        final long userId = 10L;
+        Mockito.when(userService.findById(userId)).thenReturn(Optional.empty());
+        Boolean body = userController.getUserById(userId).hasBody();
+        HttpStatus httpStatus = userController.getUserById(userId).getStatusCode();
+        assertEquals(HttpStatus.NOT_FOUND, httpStatus);
+        assertEquals(false, body);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void createUser() throws JPAException {
         User user = userList.get(0);
+        Mockito.when(userService.save(user)).thenReturn(userList.get(0));
+        User actualUser = userController.createUser(user).getBody();
+        HttpStatus httpStatus = userController.createUser(user).getStatusCode();
 
-        this.mockMvc.perform(post("/user/add")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.firstName", is(user.getFirstName())))
-                .andExpect(jsonPath("$.lastName", is(user.getLastName())))
-                .andExpect(jsonPath("$.username", is(user.getUsername())))
-                .andExpect(jsonPath("$.gender", is(user.getGender().toString())))
-                .andExpect(jsonPath("$.encPwd", is(user.getEncPwd())))
-                .andExpect(jsonPath("$.email", is(user.getEmail())))
-                .andExpect(jsonPath("$.bio", is(user.getBio())));
-                //.andExpect(jsonPath("$.userType", is(user.getUserType().toString())));
-
+        assertEquals(userList.get(0), actualUser);
+        assertEquals(HttpStatus.CREATED, httpStatus);
     }
 
     @Test
-    void updateUser() throws Exception{
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void updateUser() throws JPAException {
         long userId = 0L;
         User user = userList.get(0);
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(userRepository.save(any(User.class))).willAnswer((invocation) -> invocation.getArgument(0));
+        user.setBio("Hm");
+        Mockito.when(userService.updateUser(user, userId)).thenReturn(user);
+        Mockito.when(userService.save(user)).thenReturn(user);
 
-        this.mockMvc.perform(put("/user/update/{id}", userId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName", is(user.getFirstName())))
-                .andExpect(jsonPath("$.lastName", is(user.getLastName())))
-                .andExpect(jsonPath("$.username", is(user.getUsername())))
-                .andExpect(jsonPath("$.gender", is(user.getGender().toString())))
-                .andExpect(jsonPath("$.encPwd", is(user.getEncPwd())))
-                .andExpect(jsonPath("$.email", is(user.getEmail())))
-                .andExpect(jsonPath("$.bio", is(user.getBio())));
-                //.andExpect(jsonPath("$.userType", is(user.getUserType().toString())));
+        User actualUser = userController.updateUser(userId, user).getBody();
+        HttpStatus httpStatus = userController.updateUser(userId, user).getStatusCode();
+
+        assertEquals(userList.get(0), actualUser);
+        assertEquals(HttpStatus.OK, httpStatus);
     }
 
-    @Test
-    void updateNonExistentUser() throws Exception{
-        long userId = 1L;
-        given(userRepository.findById(userId)).willReturn(Optional.empty());
-        User user = userList.get(1);
-
-        this.mockMvc.perform(put("/user/update/{id}", userId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isNotFound());
-    }
 
     @Test
-    void deleteUser() throws Exception{
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void deleteUser(){
         long userId = 0L;
         User user = userList.get(0);
+        Mockito.when(userService.findById(userId)).thenReturn(Optional.ofNullable(user));
+        HttpStatus httpStatus = userController.deleteUser(userId).getStatusCode();
 
-        given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        doNothing().when(userRepository).deleteById(user.getId());
+        assertEquals(HttpStatus.NO_CONTENT, httpStatus);
 
-        this.mockMvc.perform(delete("/user/delete/{id}", userId))
-                .andExpect(status().isNoContent());
+        Mockito.verify(userService).deleteById(userId);
     }
 
     @Test
-    void deleteAllUsers() throws Exception{
-        given(userRepository.findAll()).willReturn(userList);
-        doNothing().when(userRepository).deleteAll();
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void deleteAllUsers(){
+        HttpStatus httpStatus = userController.deleteAllUsers().getStatusCode();
 
-        this.mockMvc.perform(delete("/user/deleteAll"))
-                .andExpect(status().isNoContent());
+        assertEquals(HttpStatus.NO_CONTENT,httpStatus);
+
+        Mockito.verify(userService).deleteAll();
     }
 }

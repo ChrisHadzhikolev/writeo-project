@@ -1,5 +1,6 @@
 package com.example.writeo.controller;
 
+import com.example.writeo.controllerService.services.UserService;
 import com.example.writeo.enums.UserType;
 import com.example.writeo.model.Role;
 import com.example.writeo.model.User;
@@ -40,7 +41,7 @@ public class AuthenticationController {
     AuthenticationManager authenticationManager;
 
     @Autowired
-    UserRepository userRepository;
+    UserRepository userService;
 
     @Autowired
     RoleRepository roleRepository;
@@ -74,13 +75,13 @@ public class AuthenticationController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
-        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+        if (userService.existsByUsername(signUpRequest.getUsername())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Username is already taken!"));
         }
 
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+        if (userService.existsByEmail(signUpRequest.getEmail())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Email is already in use!"));
@@ -97,7 +98,6 @@ public class AuthenticationController {
             throw new RuntimeException("Error: Role is not found.");
         } else {
             strRoles.forEach(role -> {
-                //System.out.println(role);
                 switch (role)
                 {
                     case "author":
@@ -122,7 +122,7 @@ public class AuthenticationController {
         }
 
         user.setRoles(roles);
-        userRepository.save(user);
+        userService.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }

@@ -1,140 +1,129 @@
 package com.example.writeo.controller;
 
+import com.example.writeo.controllerService.services.RevenueService;
+import com.example.writeo.exception.JPAException;
 import com.example.writeo.model.Revenue;
-import com.example.writeo.repository.RevenueRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.zalando.problem.ProblemModule;
-import org.zalando.problem.violations.ConstraintViolationProblemModule;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import org.springframework.security.test.context.support.WithMockUser;
 
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-@WebMvcTest(controllers = RevenueController.class, properties = {"spring.datasource.url=jdbc:h2:mem:virtual", "spring.datasource.username=sa", "spring.datasource.password=password"})
+@RunWith(SpringRunner.class)
+@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:virtual", "spring.datasource.username=sa", "spring.datasource.password=password"})
 class RevenueControllerTest {
     @Autowired
-    private MockMvc mockMvc;
+    private RevenueController revenueController;
 
     @MockBean
-    private RevenueRepository revenueRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private RevenueService revenueService;
 
     private List<Revenue> revenueList;
 
     @BeforeEach
     void setup() {
-        this.revenueList = new ArrayList<>();
-        this.revenueList.add(new Revenue(0L, LocalDate.now(), 150));
-        this.revenueList.add(new Revenue(1L, LocalDate.now().plusDays(56), 250));
-        this.revenueList.add(new Revenue(2L, LocalDate.now().plusDays(60), 550));
-
-        objectMapper.registerModule(new ProblemModule());
-        objectMapper.registerModule(new ConstraintViolationProblemModule());
-    }
-    @Test
-    void getAllRevenueRecords() throws Exception{
-        given(revenueRepository.findAll()).willReturn(revenueList);
-        this.mockMvc.perform(get("/revenue/all"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()", is(revenueList.size())));
+        revenueList = Arrays.asList(
+                new Revenue(0L, LocalDate.now(), 150),
+                new Revenue(1L, LocalDate.now().plusDays(56), 250),
+                new Revenue(2L, LocalDate.now().plusDays(60), 550)
+        );
     }
 
-    @Test
-    void getRevenueRecordById() throws Exception{
-        final long revenueId = 0;
-        final Revenue revenue = revenueList.get(0);
-        given(revenueRepository.findById(revenueId)).willReturn(Optional.of(revenue));
+    @AfterEach
+    void tearDown() {}
 
-        this.mockMvc.perform(get("/revenue/{id}", revenueId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.month_and_year", is(revenue.getMonth_and_year().toString())))
-                .andExpect(jsonPath("$.revenue", is(revenue.getRevenue())));
+    @Test
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void getAllRevenues() throws JPAException {
+        Mockito.when(revenueService.findAll()).thenReturn(revenueList);
+        List<Revenue> actualRevenues = revenueController.getAllRevenueRecords().getBody();
+        assertEquals(revenueList, actualRevenues);
     }
 
     @Test
-    void getRevenueRecordByIdNotFound() throws Exception{
-        final long revenueId = 0;
-        given(revenueRepository.findById(revenueId)).willReturn(Optional.empty());
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void getRevenueById(){
+        final long revenueId = 1L;
+        Mockito.when(revenueService.findById(revenueId)).thenReturn(Optional.ofNullable(revenueList.get(1)));
+        Revenue actualRevenue = revenueController.getRevenueRecordById(revenueId).getBody();
+        HttpStatus httpStatus = revenueController.getRevenueRecordById(revenueId).getStatusCode();
+        assertEquals(revenueList.get(1), actualRevenue);
+        assertEquals(HttpStatus.OK, httpStatus);
 
-        this.mockMvc.perform(get("/revenue/{id}", revenueId))
-                .andExpect(status().isNotFound());
     }
 
     @Test
-    void createRevenue() throws Exception{
-        given(revenueRepository.save(any(Revenue.class))).willAnswer((invocation) -> invocation.getArgument(0));
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void getRevenueByIdNotFound(){
+        final long revenueId = 10L;
+        Mockito.when(revenueService.findById(revenueId)).thenReturn(Optional.empty());
+        Boolean body = revenueController.getRevenueRecordById(revenueId).hasBody();
+        HttpStatus httpStatus = revenueController.getRevenueRecordById(revenueId).getStatusCode();
+        assertEquals(HttpStatus.NOT_FOUND, httpStatus);
+        assertEquals(false, body);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void createRevenue() throws JPAException {
         Revenue revenue = revenueList.get(0);
+        Mockito.when(revenueService.save(revenue)).thenReturn(revenueList.get(0));
+        Revenue actualRevenue = revenueController.createRevenue(revenue).getBody();
+        HttpStatus httpStatus = revenueController.createRevenue(revenue).getStatusCode();
 
-        this.mockMvc.perform(post("/revenue/add")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(revenue)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.month_and_year", is(revenue.getMonth_and_year().toString())))
-                .andExpect(jsonPath("$.revenue", is(revenue.getRevenue())));
+        assertEquals(revenueList.get(0), actualRevenue);
+        assertEquals(HttpStatus.CREATED, httpStatus);
     }
 
     @Test
-    void updateRevenue() throws Exception{
-        Long revenueId = 0L;
-        Revenue revenue = revenueList.get(0);
-        given(revenueRepository.findById(revenueId)).willReturn(Optional.of(revenue));
-        given(revenueRepository.save(any(Revenue.class))).willAnswer((invocation) -> invocation.getArgument(0));
-
-        this.mockMvc.perform(put("/revenue/update/{id}", revenue.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(revenue)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.month_and_year", is(revenue.getMonth_and_year().toString())))
-                .andExpect(jsonPath("$.revenue", is(revenue.getRevenue())));
-    }
-
-    @Test
-    void updateNonExistentRevenueRecord() throws Exception{
-        Long revenueId = 1L;
-        given(revenueRepository.findById(revenueId)).willReturn(Optional.empty());
-        Revenue revenue = revenueList.get(1);
-
-        this.mockMvc.perform(put("/revenue/update/{id}", revenueId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(revenue)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void deleteRevenueRecord() throws Exception{
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void updateRevenue() throws JPAException {
         long revenueId = 0L;
         Revenue revenue = revenueList.get(0);
+        revenue.setRevenue(500);
+        Mockito.when(revenueService.updateRevenue(revenue, revenueId)).thenReturn(revenue);
+        Mockito.when(revenueService.save(revenue)).thenReturn(revenue);
 
-        given(revenueRepository.findById(revenueId)).willReturn(Optional.of(revenue));
-        doNothing().when(revenueRepository).deleteById(revenue.getId());
+        Revenue actualRevenue = revenueController.updateRevenue(revenueId, revenue).getBody();
+        HttpStatus httpStatus = revenueController.updateRevenue(revenueId, revenue).getStatusCode();
 
-        this.mockMvc.perform(delete("/revenue/delete/{id}", revenueId))
-                .andExpect(status().isNoContent());
+        assertEquals(revenueList.get(0), actualRevenue);
+        assertEquals(HttpStatus.OK, httpStatus);
     }
 
-    @Test
-    void deleteAllRevenueRecords() throws Exception{
-        given(revenueRepository.findAll()).willReturn(revenueList);
-        doNothing().when(revenueRepository).deleteAll();
 
-        this.mockMvc.perform(delete("/revenue/deleteAll"))
-                .andExpect(status().isNoContent());
+    @Test
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void deleteRevenue(){
+        long revenueId = 0L;
+        Revenue revenue = revenueList.get(0);
+        Mockito.when(revenueService.findById(revenueId)).thenReturn(Optional.ofNullable(revenue));
+        HttpStatus httpStatus = revenueController.deleteRevenueRecord(revenueId).getStatusCode();
+
+        assertEquals(HttpStatus.NO_CONTENT, httpStatus);
+
+        Mockito.verify(revenueService).deleteById(revenueId);
+    }
+
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = "aziska", password = "qawsedrf")
+    void deleteAllRevenues(){
+        HttpStatus httpStatus = revenueController.deleteAllRevenueRecords().getStatusCode();
+
+        assertEquals(HttpStatus.NO_CONTENT,httpStatus);
+
+        Mockito.verify(revenueService).deleteAll();
     }
 }

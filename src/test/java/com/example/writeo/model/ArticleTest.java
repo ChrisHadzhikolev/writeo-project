@@ -78,8 +78,8 @@ class ArticleTest {
 
     @Test
     void setStatus() {
-        article.setArticleStatus(ArticleStatus.Auction);
-        assertEquals(ArticleStatus.Auction, article.getArticleStatus());
+        article.setArticleStatus(ArticleStatus.ForSale);
+        assertEquals(ArticleStatus.ForSale, article.getArticleStatus());
     }
 
     @Test
